@@ -402,7 +402,7 @@ def create_menu_ui(menu_data):
         chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
 
- Kamera veya Dosya Yükleme İşlemleri
+#Kamera veya Dosya Yükleme İşlemleri
 st.header("Fotoğraf Yükleme veya Çekim")
 
 # 1. Dosya Yükleme
