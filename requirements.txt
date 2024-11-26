@@ -6,4 +6,3 @@ pillow
 pdf2image
 anthropic
 python-dotenv
-openai==0.28.0
