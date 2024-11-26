@@ -21,7 +21,6 @@ AZURE_OCR_ENDPOINT = st.secrets["AZURE_OCR_ENDPOINT"]
 AZURE_OCR_KEY = st.secrets["AZURE_OCR_KEY"]
 anthropic_api_key = st.secrets["ANTHROPIC_API_KEY"]
 
-
 # Streamlit Başlık ve Ayarlar
 cv_client = ComputerVisionClient(AZURE_OCR_ENDPOINT, CognitiveServicesCredentials(AZURE_OCR_KEY))
 st.set_page_config(page_title="Dinamik Menü Analiz ve Seçim", page_icon="✈️", layout="wide")
@@ -58,9 +57,9 @@ def azure_ocr(image_path):
 def create_pattern_prompt(menu_text):
     pattern_prompt = """
     Sana vereceğim her bir menüde hem İngilizce hem Türkçe versiyonu olacak şekilde inişten önce ve inişte sonra olarak iki menü var. İki menü için de ayrı ayrı patternları incelerken İngilizce versiyonu hesaba katabilirsin. Burada bazı bağlaçlar var ve bu bağlaçlar hangi besinleri aynı anda seçip seçemeyeceğimizi belirtiyor. Senin işini kolaylaştırmak ve olayı sana anlatmak adına bazı patternları sana örnek olarak vereceğim. Gereksiz sözcükleri silebilirsin.
-    
+   
 
-Pattern 1: 
+Pattern 1:
 
 besin1
 or
@@ -86,14 +85,14 @@ Pattern 2:
 
 Lütfen seçim yapınız gibi bir ibare varsa "or" genel bir menüyü ya da yemek grubunu birbirinden ayırabilir. Eğer bir menüyü ayırıyorsa "or" kelimesinin önünde ve ardında iki farklı menü vardır ve bizden bu menüden birini seçmemiz isteniyordur. Bu menülerde de kesinlikle bir tatlı bulunur.
 
-Örnek 1: 
+Örnek 1:
 Lütfen seçim yapınız:
 makarna
-fasulye yemeği 
-künefe 
-or 
-pilav 
-köfte 
+fasulye yemeği
+künefe
+or
+pilav
+köfte
 sütlaç
 
 Olması gereken çıktı:
@@ -101,12 +100,12 @@ Menü 1: makarna, fasulye yemeği, künefe Menü 2: pilav, köfte, sütlaç
 
 Örnek 2:
 
-domatesli makarna 
+domatesli makarna
 bezelye yemeği
-puding 
-or 
-erişte makarnası 
-nohut yemeği 
+puding
+or
+erişte makarnası
+nohut yemeği
 profiterol
 
 Olması gereken çıktı:
@@ -129,11 +128,11 @@ Grup 1: Domatesli makarna, Nohut Yemeği, puding  Grup 2: Dana bonfile, Buharda 
 
 Pattern 4 :
 
-Eğer ilgili kelime küçük harflerden de oluşuyorsa onun içinde bulunduğu cümle; 
+Eğer ilgili kelime küçük harflerden de oluşuyorsa onun içinde bulunduğu cümle;
 
--gereksiz bir ifade olabilir 
-veya 
--besini tarif eden bir yazı olabilir 
+-gereksiz bir ifade olabilir
+veya
+-besini tarif eden bir yazı olabilir
 
 Dolayısıyla küçük harf kullanılmış kelimeleri ve bağlı olduğu cümleyi teker teker ayrıca değerlendirmen lazım. Besini tarif eden bir yazı ise tarif ettiği besinin hemen yanına  parantez içerisinde yazdır. Türkçe tarifse besinin Türkçe adının yanına, İngilizce tarifse besinin İngilizce adının yanına yazacaksın. Eğer tarif değilse gereksiz bir ifade olarak kabul edebilirsin.
 
@@ -150,21 +149,21 @@ BEEF STROGANOFF (sautéed zucchini and red pepper, potatoes gratin)
 
 Pattern 5:
 
-Eğer ilgili besin aralarında and, or veya seçim yapınız gibi seçim yapmaya teşvik edici bir cümle yoksa yoksa ilgili bağlama göre o besinlerin hepsi seçilir. 
+Eğer ilgili besin aralarında and, or veya seçim yapınız gibi seçim yapmaya teşvik edici bir cümle yoksa yoksa ilgili bağlama göre o besinlerin hepsi seçilir.
 
-Örnek: 
-besin 1 
-besin 2 
-besin 3 
-besin 4 
-. . 
-besin 5 
+Örnek:
+besin 1
+besin 2
+besin 3
+besin 4
+. .
+besin 5
 
 burada besin 1 besin 2 besin 3 .... tüm besinler seçilebilir.
 
 Her bir kategori için JSON formatında şöyle bir çıktı oluştur ve bunu iki dil için de yap:
 İnişten önce yazısından önce menü 1, sonraki yazılar menü 2 olacak.
-    
+   
      "menü 1  / menü 2": {
         "Besin seçimi / Seçenek Seçimi": [
             {
@@ -177,11 +176,11 @@ Her bir kategori için JSON formatında şöyle bir çıktı oluştur ve bunu ik
                 ],
                 "rules": "Her iki başlangıç da seçilebilir"
             },
-        
-            
-        
-            
-            
+       
+           
+       
+           
+           
     Eğer menüler yada besin grubu arasında seçim yapılacaksa Seçenek Seçimi eğer Besin seçimi arasında seçim yapılacaksa Besin seçimi keyine koy. Bağımsız seçenekler type optional olacak şekilde  ayrı bir json oluştur.Ekmek vb. pastane ürünleri bazen verilebiliyor. Ona da dikkat et.Ayrıca bazen dilenilen zamanda ikramda bulunulabiliyor. Onları da name kısmına "Dilediğiniz zaman" yazarak verebilirsin.
     Lütfen bana Türkçe bir dict format olarak döndür.
     Pattern 2 ve 3 karıştırılabilir iyi analiz et.
@@ -203,7 +202,7 @@ import json
 
 # Menü Analizi
 def analyze_menu_with_openai(text):
-    
+   
     try:
         prompt = create_pattern_prompt(text)
         response = client.messages.create(
@@ -213,26 +212,26 @@ def analyze_menu_with_openai(text):
             messages=[{"role": "user", "content": prompt}]
         )
        
-        
+       
      # Convert response to string and extract JSON
         response_text = str(response.content)
         # OpenAI Prompt
         # Prompt
         prompt = f"""
         Read the raw response I sent you, and using the relevant food names from the menu below, create dict formats in both Turkish and English one below the other.
-        
+       
         This is the menu:
-        
+       
         {text}
-        
+       
         This is the Turkish output:
-        
+       
         {response.content}
-        
+       
         Bunu hem Türkçe hem de İngilizce versiyonlarını yalnızca bir JSON formatında olacak şekilde  language key'i de oluşturarak bana ver.
-        
+       
         Örnek:
-            
+           
         {{
     "Turkish": {{
         "menu 1": {{
@@ -291,7 +290,7 @@ def analyze_menu_with_openai(text):
         }}
     }}
 }}
-        
+       
         """
         response = openai.ChatCompletion.create(
             model="gpt-4o",
@@ -306,8 +305,8 @@ def analyze_menu_with_openai(text):
         cleaned_text = re.sub(r'^```json\n|```$', '', categorized_text.strip(), flags=re.MULTILINE)
         menu_dict = json.loads(cleaned_text)
         create_menu_ui(menu_dict)
-        
-            
+       
+           
     except Exception as e:
         st.error(f"Menu analysis error: {e}")
         st.write("Response object:", response)
@@ -378,16 +377,16 @@ def create_menu_ui(menu_data):
     # Chatbot Entegrasyonu
     st.subheader("Chatbot'a Sorular Sorun")
     user_message = st.text_input("Sorunuzu yazın:")
-    
+   
     if user_message:
         # Prompt oluşturma
         prompt = f"""
         Kullanıcı seçimleri:
         {selections}
-    
+   
         Kullanıcının sorusu:
         {user_message}
-    
+   
         Lütfen seçimlere dayanarak ve kullanıcının sorusunu dikkate alarak uygun bir cevap verin.
         """
         # OpenAI API çağrısı
@@ -403,51 +402,36 @@ def create_menu_ui(menu_data):
         chatbot_response = response['choices'][0]['message']['content']
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
 
-
-
-# Fotoğraf Yükleme veya Çekim İşlevleri
-st.subheader("Fotoğraf Yükle veya Mobil Kameranızı Kullanarak Çekin")
-
-# 1. Dosya Yükleme
+# Dosya Yükleme
 uploaded_file = st.file_uploader("PDF veya Görüntü Dosyanızı Yükleyin", type=["pdf", "png", "jpg", "jpeg"])
-
-# 2. Kamera ile Fotoğraf Çekme
-camera_triggered = st.button("📷 Fotoğraf Çek")
-camera_photo = None
-if camera_triggered:
-    st.info("Kameranızı kullanarak fotoğraf çekmek için izin verin.")
-    camera_photo = st.camera_input("Fotoğraf Çek")
-
-# Görsellerin İşlenmesi
-images = []
 if uploaded_file:
-    # Yüklenen dosya işleme
     if uploaded_file.type == "application/pdf":
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file.write(uploaded_file.read())
             temp_pdf_path = temp_file.name
         pdf_pages = convert_from_path(temp_pdf_path, dpi=300)
-        images.extend(pdf_pages)
+        images = pdf_pages
     elif uploaded_file.type in ["image/png", "image/jpeg"]:
         image = Image.open(uploaded_file)
-        images.append(image)
+        images = [image]
 
-if camera_photo:
-    # Kameradan alınan fotoğraf işleme
-    image = Image.open(camera_photo)
-    images.append(image)
+    if 'images' in locals():
+        extracted_text = ""
+        for img in images:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
+                img.save(temp_image_file.name)
+                extracted_text += azure_ocr(temp_image_file.name) + "\n"
 
-# OCR ve Çıktı Gösterimi
-if images:
-    st.subheader("OCR İşlemi ve Menü Analizi")
-    extracted_text = ""
-    for img in images:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
-            img.save(temp_image_file.name)
-            extracted_text += azure_ocr(temp_image_file.name) + "\n"
-
-    if extracted_text:
-        st.success("OCR işlemi tamamlandı!")
+        st.subheader("OCR İşlemi ile Çıkarılan Metin")
         st.text_area("OCR Çıktısı", value=extracted_text, height=300)
-else:
-    st.info("Lütfen bir dosya yükleyin veya '📷 Fotoğraf Çek' butonunu kullanarak fotoğraf çekin.")
+
+        st.subheader("Menü Analizi")
+        menu_analysis = analyze_menu_with_openai(extracted_text)
+        if menu_analysis:
+            st.success("Menü başarıyla analiz edildi!")
+            # OpenAI analiz çıktısını göster
+            st.subheader("OpenAI Analiz Çıktısı")
+            st.text_area("OpenAI'den Dönen Yanıt:", value=menu_analysis, height=300)
+
+            # Dinamik Kartlar
+            create_menu_ui(menu_analysis)
