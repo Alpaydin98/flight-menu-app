@@ -14,8 +14,7 @@ import re
 
 from dotenv import load_dotenv
 import os
-# Poppler yüklemesini kontrol et
-os.system("apt-get update && apt-get install -y poppler-utils")
+
 # Streamlit Secrets ile çevre değişkenlerini alıyoruz
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 AZURE_OCR_ENDPOINT = st.secrets["AZURE_OCR_ENDPOINT"]
@@ -29,22 +28,30 @@ st.set_page_config(page_title="Dinamik Menü Analiz ve Seçim", page_icon="✈�
 client = anthropic.Client(api_key=anthropic_api_key)
 
 
-def azure_ocr_from_pdf(pdf_path):
-    with open(pdf_path, "rb") as pdf_file:
-        ocr_result = cv_client.read_in_stream(pdf_file, raw=True)
-        operation_location = ocr_result.headers["Operation-Location"]
+
+# OCR İşlevi
+def azure_ocr(image_path):
+    try:
+        with open(image_path, "rb") as image_stream:
+            read_response = cv_client.read_in_stream(image_stream, raw=True)
+        operation_location = read_response.headers["Operation-Location"]
         operation_id = operation_location.split("/")[-1]
+
         while True:
             result = cv_client.get_read_result(operation_id)
             if result.status not in [OperationStatusCodes.not_started, OperationStatusCodes.running]:
                 break
             time.sleep(1)
+
         extracted_text = ""
         if result.status == OperationStatusCodes.succeeded:
             for page in result.analyze_result.read_results:
                 for line in page.lines:
                     extracted_text += line.text + "\n"
         return extracted_text
+    except Exception as e:
+        st.error(f"OCR işlemi sırasında bir hata oluştu: {e}")
+        return ""
 
 # Prompt Oluşturma (Pattern Kuralları Dahil)
 def create_pattern_prompt(menu_text):
@@ -398,23 +405,25 @@ def create_menu_ui(menu_data):
 # Dosya Yükleme
 uploaded_file = st.file_uploader("PDF veya Görüntü Dosyanızı Yükleyin", type=["pdf", "png", "jpg", "jpeg"])
 if uploaded_file:
+    extracted_text = ""
+
+    # Eğer PDF yüklendiyse
     if uploaded_file.type == "application/pdf":
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file.write(uploaded_file.read())
             temp_pdf_path = temp_file.name
-        pdf_pages = convert_from_path(temp_pdf_path, dpi=300)
-        images = pdf_pages
+
+        # PDF'den OCR kullanılarak metin çıkarma
+        extracted_text = azure_ocr(temp_pdf_path)
+
+    # Eğer görüntü yüklendiyse
     elif uploaded_file.type in ["image/png", "image/jpeg"]:
-        image = Image.open(uploaded_file)
-        images = [image]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
+            temp_image_file.write(uploaded_file.read())
+            extracted_text = azure_ocr(temp_image_file.name)
 
-    if 'images' in locals():
-        extracted_text = ""
-        for img in images:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
-                img.save(temp_image_file.name)
-                extracted_text += azure_ocr(temp_image_file.name) + "\n"
-
+    # OCR işlemi tamamlandıktan sonra metni görüntüle
+    if extracted_text:
         st.subheader("OCR İşlemi ile Çıkarılan Metin")
         st.text_area("OCR Çıktısı", value=extracted_text, height=300)
 
@@ -428,3 +437,5 @@ if uploaded_file:
 
             # Dinamik Kartlar
             create_menu_ui(menu_analysis)
+    else:
+        st.error("OCR işlemi başarısız. Lütfen dosyanızı kontrol edin.")
