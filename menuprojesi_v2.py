@@ -345,37 +345,18 @@ def create_menu_ui(menu_data):
 
     # Seçimler için veri işleme
     selections = {}
-    for category in selected_menu_data[selection_type]:
-        st.subheader(category["name"])
-        items = category["items"]
-
-        if category["type"] == "single":
-            selected_item = st.radio(f"{category['name']} seçiniz:", items)
-            selections[category["name"]] = selected_item
-        elif category["type"] == "multiple":
-            selected_items = []
-            for item in items:
-                if st.checkbox(item):
-                    selected_items.append(item)
-            selections[category["name"]] = selected_items
-        elif category["type"] == "optional":
-            optional_items = []
-            for item in items:
-                if st.checkbox(item):
-                    optional_items.append(item)
-            selections[category["name"]] = optional_items
-        elif category["type"] == "option":
-            # Eğer 'seçenek seçimi' türü seçildiyse, altındaki tüm öğeleri otomatik olarak seç
-            all_selected_items = items  # Tüm öğeleri al
-            selections[category["name"]] = all_selected_items
+    st.subheader("Lütfen bir seçenek seçin:")
+    options = list(selected_menu_data[selection_type].keys())  # Seçenek 1, Seçenek 2 gibi
+    selected_option = st.radio("Seçenekler:", options)
+    
+    selected_option_items = selected_menu_data[selection_type][selected_option]
+    # Otomatik olarak tüm öğeleri seç
+    selections[selected_option] = selected_option_items
 
     # Kullanıcı Seçimlerini Göster
     st.write("### Seçimleriniz:")
     for category, items in selections.items():
-        if isinstance(items, list):
-            st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
-        else:
-            st.write(f"**{category}:** {items if items else 'Seçilmedi'}")
+        st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
 
     # Chatbot Entegrasyonu
     st.subheader("Chatbot'a Sorular Sorun")
@@ -393,7 +374,7 @@ def create_menu_ui(menu_data):
         Lütfen seçimlere dayanarak ve kullanıcının sorusunu dikkate alarak uygun bir cevap verin.
         """
         # OpenAI API çağrısı
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are an assistant that provides information based on menu selections."},
@@ -402,8 +383,9 @@ def create_menu_ui(menu_data):
             max_tokens=150,
             temperature=0.5,
         )
-        chatbot_response = response['choices'][0]['message']['content']
+        chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
+
 
 
 
