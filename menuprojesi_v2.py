@@ -315,6 +315,7 @@ def analyze_menu_with_openai(text):
 import streamlit as st
 import json
 
+# Dinamik Menü UI Fonksiyonu
 def create_menu_ui(menu_data):
     st.title("Dinamik Menü ve Chatbot")
 
@@ -345,43 +346,25 @@ def create_menu_ui(menu_data):
 
     # Seçimler için veri işleme
     selections = {}
-    st.subheader("Seçimler:")
+    for category in selected_menu_data[selection_type]:
+        st.subheader(category["name"])
+        items = category["items"]
 
-    # Seçenek Seçimi
-    if selection_type in ["seçenek seçimi", "option selection"]:
-        option_names = [category["name"] for category in selected_menu_data[selection_type]]
-        selected_option = st.radio("Lütfen bir seçenek seçin:", option_names)
-
-        # Seçilen seçeneğin altındaki tüm öğeler otomatik olarak alınır
-        for category in selected_menu_data[selection_type]:
-            if category["name"] == selected_option:
-                st.write(f"**Seçilen Seçenek: {category['name']}**")
-                selections[category["name"]] = category["items"]
-                st.write("### İçerikler:")
-                for item in category["items"]:
-                    st.write(f"- {item}")
-
-    # Besin Seçimi
-    elif selection_type in ["besin seçimi", "food selection"]:
-        for category in selected_menu_data[selection_type]:
-            st.subheader(category["name"])
-            items = category["items"]
-
-            if category["type"] == "single":
-                selected_item = st.radio(f"{category['name']} seçiniz:", items)
-                selections[category["name"]] = selected_item
-            elif category["type"] == "multiple":
-                selected_items = []
-                for item in items:
-                    if st.checkbox(item):
-                        selected_items.append(item)
-                selections[category["name"]] = selected_items
-            elif category["type"] == "optional":
-                optional_items = []
-                for item in items:
-                    if st.checkbox(item):
-                        optional_items.append(item)
-                selections[category["name"]] = optional_items
+        if category["type"] == "single":
+            selected_item = st.radio(f"{category['name']} seçiniz:", items)
+            selections[category["name"]] = selected_item
+        elif category["type"] == "multiple":
+            selected_items = []
+            for item in items:
+                if st.checkbox(item):
+                    selected_items.append(item)
+            selections[category["name"]] = selected_items
+        elif category["type"] == "optional":
+            optional_items = []
+            for item in items:
+                if st.checkbox(item):
+                    optional_items.append(item)
+            selections[category["name"]] = optional_items
 
     # Kullanıcı Seçimlerini Göster
     st.write("### Seçimleriniz:")
@@ -418,6 +401,7 @@ def create_menu_ui(menu_data):
         )
         chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
+
 
 
 
