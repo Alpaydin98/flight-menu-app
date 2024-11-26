@@ -1,7 +1,8 @@
 streamlit
+openai
 azure-cognitiveservices-vision-computervision
 msrest
+pillow
 pdf2image
-Pillow
 anthropic
-openai
+python-dotenv
