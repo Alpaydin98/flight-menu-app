@@ -417,7 +417,7 @@ if camera_triggered:
     st.info("Kamerayı kullanarak fotoğraf çekmek için aşağıdaki modülü kullanabilirsiniz.")
     camera_photo = st.camera_input("Fotoğraf Çek")
 
-# İşlenen Görseller
+# Görsellerin Toplanması
 images = []
 
 if uploaded_file:
@@ -433,9 +433,12 @@ if uploaded_file:
         images.append(image)
 
 if camera_photo:
-    image = Image.open(camera_photo)
-    st.image(image, caption="Kameradan Çekilen Görüntü", use_column_width=True)
-    images.append(image)
+    try:
+        image = Image.open(camera_photo)
+        st.image(image, caption="Kameradan Çekilen Görüntü", use_column_width=True)
+        images.append(image)
+    except Exception as e:
+        st.error(f"Kameradan alınan görüntü işlenemedi: {e}")
 
 # OCR İşlemi
 if images:
@@ -446,9 +449,12 @@ if images:
         if isinstance(img, str):  # PDF dosya yolu
             extracted_text += azure_ocr(img) + "\n"
         else:  # Görüntü (kamera veya yüklenen)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
-                img.save(temp_image_file.name)
-                extracted_text += azure_ocr(temp_image_file.name) + "\n"
+            try:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
+                    img.save(temp_image_file.name)
+                    extracted_text += azure_ocr(temp_image_file.name) + "\n"
+            except Exception as e:
+                st.error(f"Görüntü OCR işleminde hata oluştu: {e}")
 
     if extracted_text:
         st.success("OCR işlemi başarıyla tamamlandı!")
@@ -460,5 +466,9 @@ if images:
         if menu_analysis:
             st.success("Menü başarıyla analiz edildi!")
             create_menu_ui(menu_analysis)
+        else:
+            st.error("Menü analizi başarısız oldu.")
     else:
         st.error("OCR işlemi başarısız. Lütfen görüntünüzü veya dosyanızı kontrol edin.")
+else:
+    st.info("Lütfen bir dosya yükleyin veya kamera ile fotoğraf çekin.")
