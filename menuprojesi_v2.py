@@ -402,20 +402,15 @@ def create_menu_ui(menu_data):
         chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
 
-# Fotoğraf Yükleme veya Çekim Seçenekleri
+ Kamera veya Dosya Yükleme İşlemleri
 st.header("Fotoğraf Yükleme veya Çekim")
 
 # 1. Dosya Yükleme
 uploaded_file = st.file_uploader("PDF veya Görüntü Dosyanızı Yükleyin", type=["pdf", "png", "jpg", "jpeg"])
 
-# 2. Kamera ile Çekim
+# 2. Kamera ile Fotoğraf Çekim
 st.subheader("Ya da Fotoğraf Çekmek için Butona Tıklayın")
-camera_triggered = st.button("📷 Fotoğraf Çek")
-camera_photo = None
-
-if camera_triggered:
-    st.info("Kamerayı kullanarak fotoğraf çekmek için aşağıdaki modülü kullanabilirsiniz.")
-    camera_photo = st.camera_input("Fotoğraf Çek")
+camera_photo = st.camera_input("Fotoğraf Çek")
 
 # Görsellerin Toplanması
 images = []
@@ -442,7 +437,7 @@ if camera_photo:
 
 # OCR İşlemi
 if images:
-    st.subheader("OCR İşlemi")
+    st.subheader("OCR İşlemi Başlatılıyor")
     extracted_text = ""
 
     for img in images:
@@ -456,9 +451,8 @@ if images:
             except Exception as e:
                 st.error(f"Görüntü OCR işleminde hata oluştu: {e}")
 
-    if extracted_text:
+    if extracted_text.strip():
         st.success("OCR işlemi başarıyla tamamlandı!")
-        st.text_area("OCR Çıktısı", value=extracted_text, height=300)
 
         # Menü Analizi
         st.subheader("Menü Analizi")
@@ -471,4 +465,4 @@ if images:
     else:
         st.error("OCR işlemi başarısız. Lütfen görüntünüzü veya dosyanızı kontrol edin.")
 else:
-    st.info("Lütfen bir dosya yükleyin veya kamera ile fotoğraf çekin.")
+    st.info("Lütfen bir dosya yükleyin veya kamerayla fotoğraf çekin.")
