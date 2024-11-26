@@ -366,7 +366,7 @@ def create_menu_ui(menu_data):
             selections[category["name"]] = optional_items
         elif category["type"] == "option":
             # Eğer seçenek türü seçildiyse, altındaki tüm öğeleri otomatik olarak seç
-            selections[category["name"]] = items  # Tüm öğeleri al
+            selections[category["name"]] = items  # Tüm öğeleri al ve seçili yap
 
     # Kullanıcı Seçimlerini Göster
     st.write("### Seçimleriniz:")
@@ -403,6 +403,7 @@ def create_menu_ui(menu_data):
         )
         chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
+
 
 #Kamera veya Dosya Yükleme İşlemleri
 st.header("Fotoğraf Yükleme veya Çekim")
