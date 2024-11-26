@@ -15,12 +15,11 @@ import re
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
-AZURE_OCR_ENDPOINT = os.getenv("AZURE_OCR_ENDPOINT")
-AZURE_OCR_KEY = os.getenv("AZURE_OCR_KEY")
-anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+# Streamlit Secrets ile çevre değişkenlerini alıyoruz
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+AZURE_OCR_ENDPOINT = st.secrets["AZURE_OCR_ENDPOINT"]
+AZURE_OCR_KEY = st.secrets["AZURE_OCR_KEY"]
+anthropic_api_key = st.secrets["ANTHROPIC_API_KEY"]
 
 
 # Streamlit Başlık ve Ayarlar
