@@ -292,7 +292,7 @@ def analyze_menu_with_openai(text):
 }}
        
         """
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4o",
             messages=[
             {"role": "system", "content": "You are an assistant that extracts and formats JSON data."},
@@ -390,7 +390,7 @@ def create_menu_ui(menu_data):
         Lütfen seçimlere dayanarak ve kullanıcının sorusunu dikkate alarak uygun bir cevap verin.
         """
         # OpenAI API çağrısı
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are an assistant that provides information based on menu selections."},
