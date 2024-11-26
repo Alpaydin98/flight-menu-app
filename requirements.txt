@@ -1,0 +1,7 @@
+streamlit
+azure-cognitiveservices-vision-computervision
+msrest
+pdf2image
+Pillow
+anthropic
+openai
