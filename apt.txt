@@ -1,1 +1,2 @@
 poppler-utils
+libglib2.0-0
