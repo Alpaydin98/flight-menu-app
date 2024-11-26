@@ -369,24 +369,28 @@ def create_menu_ui(menu_data):
 
     # Kullanıcı Seçimlerini Göster
     st.write("### Seçimleriniz:")
-    st.json(selections)
+    for category, items in selections.items():
+        if isinstance(items, list):
+            st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
+        else:
+            st.write(f"**{category}:** {items if items else 'Seçilmedi'}")
 
     # Chatbot Entegrasyonu
     st.subheader("Chatbot'a Sorular Sorun")
     user_message = st.text_input("Sorunuzu yazın:")
-
+    
     if user_message:
+        # Prompt oluşturma
         prompt = f"""
-        Kullanıcı seçimleri ve soruları şunlardır:
-
-        Seçimler:
+        Kullanıcı seçimleri:
         {selections}
-
-        Kullanıcı Sorusu:
+    
+        Kullanıcının sorusu:
         {user_message}
-
-        Lütfen uygun bir cevap verin.
+    
+        Lütfen seçimlere dayanarak ve kullanıcının sorusunu dikkate alarak uygun bir cevap verin.
         """
+        # OpenAI API çağrısı
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
@@ -399,36 +403,42 @@ def create_menu_ui(menu_data):
         chatbot_response = response['choices'][0]['message']['content']
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
 
-# Dosya Yükleme
+# Fotoğraf Yükle veya Mobil Kamera ile Fotoğraf Çek
+st.subheader("Fotoğraf Yükle veya Mobil Kameranızı Kullanarak Çekin")
 uploaded_file = st.file_uploader("PDF veya Görüntü Dosyanızı Yükleyin", type=["pdf", "png", "jpg", "jpeg"])
+camera_photo = st.camera_input("Mobil Kamerayı Kullanarak Fotoğraf Çek")
+
+images = []
 if uploaded_file:
     if uploaded_file.type == "application/pdf":
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file.write(uploaded_file.read())
             temp_pdf_path = temp_file.name
         pdf_pages = convert_from_path(temp_pdf_path, dpi=300)
-        images = pdf_pages
+        images.extend(pdf_pages)
     elif uploaded_file.type in ["image/png", "image/jpeg"]:
         image = Image.open(uploaded_file)
-        images = [image]
+        images.append(image)
 
-    if 'images' in locals():
-        extracted_text = ""
-        for img in images:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
-                img.save(temp_image_file.name)
-                extracted_text += azure_ocr(temp_image_file.name) + "\n"
+if camera_photo:
+    image = Image.open(camera_photo)
+    images.append(image)
 
-        st.subheader("OCR İşlemi ile Çıkarılan Metin")
-        st.text_area("OCR Çıktısı", value=extracted_text, height=300)
+# Görüntü işleme
+if images:
+    extracted_text = ""
+    for img in images:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
+            img.save(temp_image_file.name)
+            extracted_text += azure_ocr(temp_image_file.name) + "\n"
 
-        st.subheader("Menü Analizi")
-        menu_analysis = analyze_menu_with_openai(extracted_text)
-        if menu_analysis:
-            st.success("Menü başarıyla analiz edildi!")
-            # OpenAI analiz çıktısını göster
-            st.subheader("OpenAI Analiz Çıktısı")
-            st.text_area("OpenAI'den Dönen Yanıt:", value=menu_analysis, height=300)
+    st.subheader("OCR İşlemi ile Çıkarılan Metin")
+    st.text_area("OCR Çıktısı", value=extracted_text, height=300)
 
-            # Dinamik Kartlar
-            create_menu_ui(menu_analysis)
+    st.subheader("Menü Analizi")
+    menu_analysis = analyze_menu_with_openai(extracted_text)
+    if menu_analysis:
+        st.success("Menü başarıyla analiz edildi!")
+        create_menu_ui(menu_analysis)
+else:
+    st.info("Lütfen bir dosya yükleyin veya kameranızı kullanarak fotoğraf çekin.")
