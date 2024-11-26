@@ -403,58 +403,25 @@ def create_menu_ui(menu_data):
         chatbot_response = response['choices'][0]['message']['content']
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
 
-# Camera input with fullscreen support (HTML/JS integration)
-def camera_input_with_fullscreen():
-    camera_html = """
-    <div style="text-align: center;">
-        <video id="video" autoplay style="width: 100%; max-height: 80vh;"></video>
-        <button id="capture" style="margin-top: 20px; padding: 10px 20px; font-size: 18px;">Fotoğraf Çek</button>
-        <canvas id="canvas" style="display: none;"></canvas>
-    </div>
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const captureButton = document.getElementById('capture');
-
-        // Start the camera
-        navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-            video.srcObject = stream;
-        });
-
-        // Capture photo
-        captureButton.addEventListener('click', () => {
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            const imageData = canvas.toDataURL('image/jpeg');
-            const link = document.createElement('a');
-            link.href = imageData;
-            link.download = 'captured_photo.jpg';
-            link.click();
-        });
-    </script>
-    """
-    components.html(camera_html, height=600)
 
 
-
-
-# Photo upload or capture section
+# Fotoğraf Yükleme veya Çekim İşlevleri
 st.subheader("Fotoğraf Yükle veya Mobil Kameranızı Kullanarak Çekin")
 
-# 1. File Upload
+# 1. Dosya Yükleme
 uploaded_file = st.file_uploader("PDF veya Görüntü Dosyanızı Yükleyin", type=["pdf", "png", "jpg", "jpeg"])
 
-# 2. Camera Capture Button
+# 2. Kamera ile Fotoğraf Çekme
 camera_triggered = st.button("📷 Fotoğraf Çek")
+camera_photo = None
 if camera_triggered:
     st.info("Kameranızı kullanarak fotoğraf çekmek için izin verin.")
-    camera_input_with_fullscreen()
+    camera_photo = st.camera_input("Fotoğraf Çek")
 
-# Process images
+# Görsellerin İşlenmesi
 images = []
 if uploaded_file:
+    # Yüklenen dosya işleme
     if uploaded_file.type == "application/pdf":
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file.write(uploaded_file.read())
@@ -465,7 +432,12 @@ if uploaded_file:
         image = Image.open(uploaded_file)
         images.append(image)
 
-# OCR and output display
+if camera_photo:
+    # Kameradan alınan fotoğraf işleme
+    image = Image.open(camera_photo)
+    images.append(image)
+
+# OCR ve Çıktı Gösterimi
 if images:
     st.subheader("OCR İşlemi ve Menü Analizi")
     extracted_text = ""
