@@ -14,7 +14,8 @@ import re
 
 from dotenv import load_dotenv
 import os
-
+# Poppler yüklemesini kontrol et
+os.system("apt-get update && apt-get install -y poppler-utils")
 # Streamlit Secrets ile çevre değişkenlerini alıyoruz
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 AZURE_OCR_ENDPOINT = st.secrets["AZURE_OCR_ENDPOINT"]
