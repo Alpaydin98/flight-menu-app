@@ -402,12 +402,20 @@ def create_menu_ui(menu_data):
         chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
 
-# Dosya Yükleme
-uploaded_file = st.file_uploader("PDF veya Görüntü Dosyanızı Yükleyin", type=["pdf", "png", "jpg", "jpeg"])
-if uploaded_file:
-    extracted_text = ""
+# Fotoğraf Yükleme veya Çekim İşlevleri
+st.subheader("PDF veya Görüntü Dosyasını Yükleyin ya da Kameranızı Kullanarak Fotoğraf Çekin")
 
-    # Eğer PDF yüklendiyse
+# 1. Dosya Yükleme
+uploaded_file = st.file_uploader("Dosya Yükleyin (PDF veya Görüntü)", type=["pdf", "png", "jpg", "jpeg"])
+
+# 2. Fotoğraf Çekme
+camera_photo = st.camera_input("📷 Fotoğraf Çek")
+
+# Görsellerin İşlenmesi
+extracted_text = ""
+
+# Eğer bir dosya yüklendiyse
+if uploaded_file:
     if uploaded_file.type == "application/pdf":
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file.write(uploaded_file.read())
@@ -416,26 +424,31 @@ if uploaded_file:
         # PDF'den OCR kullanılarak metin çıkarma
         extracted_text = azure_ocr(temp_pdf_path)
 
-    # Eğer görüntü yüklendiyse
     elif uploaded_file.type in ["image/png", "image/jpeg"]:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
             temp_image_file.write(uploaded_file.read())
             extracted_text = azure_ocr(temp_image_file.name)
 
-    # OCR işlemi tamamlandıktan sonra metni görüntüle
-    if extracted_text:
-        st.subheader("OCR İşlemi ile Çıkarılan Metin")
-        st.text_area("OCR Çıktısı", value=extracted_text, height=300)
+# Eğer bir fotoğraf çekildiyse
+if camera_photo:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_camera_file:
+        temp_camera_file.write(camera_photo.getvalue())
+        extracted_text = azure_ocr(temp_camera_file.name)
 
-        st.subheader("Menü Analizi")
-        menu_analysis = analyze_menu_with_openai(extracted_text)
-        if menu_analysis:
-            st.success("Menü başarıyla analiz edildi!")
-            # OpenAI analiz çıktısını göster
-            st.subheader("OpenAI Analiz Çıktısı")
-            st.text_area("OpenAI'den Dönen Yanıt:", value=menu_analysis, height=300)
+# OCR işlemi tamamlandıktan sonra metni görüntüle
+if extracted_text:
+    st.subheader("OCR İşlemi ile Çıkarılan Metin")
+    st.text_area("OCR Çıktısı", value=extracted_text, height=300)
 
-            # Dinamik Kartlar
-            create_menu_ui(menu_analysis)
-    else:
-        st.error("OCR işlemi başarısız. Lütfen dosyanızı kontrol edin.")
+    st.subheader("Menü Analizi")
+    menu_analysis = analyze_menu_with_openai(extracted_text)
+    if menu_analysis:
+        st.success("Menü başarıyla analiz edildi!")
+        # OpenAI analiz çıktısını göster
+        st.subheader("OpenAI Analiz Çıktısı")
+        st.text_area("OpenAI'den Dönen Yanıt:", value=menu_analysis, height=300)
+
+        # Dinamik Kartlar
+        create_menu_ui(menu_analysis)
+else:
+    st.info("Lütfen bir dosya yükleyin veya kameranızı kullanarak fotoğraf çekin.")
