@@ -304,6 +304,7 @@ def analyze_menu_with_openai(text):
         categorized_text = response.choices[0].message.content
         cleaned_text = re.sub(r'^```json\n|```$', '', categorized_text.strip(), flags=re.MULTILINE)
         menu_dict = json.loads(cleaned_text)
+        str.write(menu_dict)
         create_menu_ui(menu_dict)
        
            
