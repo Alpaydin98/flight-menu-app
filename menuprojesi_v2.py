@@ -346,8 +346,9 @@ def create_menu_ui(menu_data):
     # Seçimler için veri işleme
     selections = {}
     st.subheader("Seçimler:")
+
+    # Seçenek Seçimi
     if selection_type in ["seçenek seçimi", "option selection"]:
-        # Kullanıcıya seçenekler sunulur
         option_names = [category["name"] for category in selected_menu_data[selection_type]]
         selected_option = st.radio("Lütfen bir seçenek seçin:", option_names)
 
@@ -360,8 +361,8 @@ def create_menu_ui(menu_data):
                 for item in category["items"]:
                     st.write(f"- {item}")
 
+    # Besin Seçimi
     elif selection_type in ["besin seçimi", "food selection"]:
-        # Kullanıcıya besin seçimi için detaylar gösterilir
         for category in selected_menu_data[selection_type]:
             st.subheader(category["name"])
             items = category["items"]
@@ -417,6 +418,7 @@ def create_menu_ui(menu_data):
         )
         chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
+
 
 
 
