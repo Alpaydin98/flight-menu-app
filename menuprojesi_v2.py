@@ -301,7 +301,7 @@ def analyze_menu_with_openai(text):
             max_tokens=2000,
             temperature=0.2,
         )
-        categorized_text = response['choices'][0]['message']['content']
+        categorized_text = response.choices[0].message.content
         cleaned_text = re.sub(r'^```json\n|```$', '', categorized_text.strip(), flags=re.MULTILINE)
         menu_dict = json.loads(cleaned_text)
         create_menu_ui(menu_dict)
@@ -399,7 +399,7 @@ def create_menu_ui(menu_data):
             max_tokens=150,
             temperature=0.5,
         )
-        chatbot_response = response['choices'][0]['message']['content']
+        chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
 
 # Dosya Yükleme
