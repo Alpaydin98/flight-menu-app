@@ -315,7 +315,6 @@ def analyze_menu_with_openai(text):
 import streamlit as st
 import json
 
-# Dinamik Menü UI Fonksiyonu
 def create_menu_ui(menu_data):
     st.title("Dinamik Menü ve Chatbot")
 
@@ -365,6 +364,9 @@ def create_menu_ui(menu_data):
                 if st.checkbox(item):
                     optional_items.append(item)
             selections[category["name"]] = optional_items
+        elif category["type"] == "option":
+            # Eğer seçenek türü seçildiyse, altındaki tüm öğeleri otomatik olarak seç
+            selections[category["name"]] = items  # Tüm öğeleri al
 
     # Kullanıcı Seçimlerini Göster
     st.write("### Seçimleriniz:")
@@ -392,7 +394,7 @@ def create_menu_ui(menu_data):
         # OpenAI API çağrısı
         response = openai.chat.completions.create(
             model="gpt-4",
-            messages=[
+            messages=[ 
                 {"role": "system", "content": "You are an assistant that provides information based on menu selections."},
                 {"role": "user", "content": prompt}
             ],
