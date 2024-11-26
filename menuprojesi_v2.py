@@ -346,33 +346,41 @@ def create_menu_ui(menu_data):
     # Seçimler için veri işleme
     selections = {}
     st.subheader("Seçimler:")
-    for category in selected_menu_data[selection_type]:
-        st.subheader(category["name"])
-        items = category["items"]
+    if selection_type in ["seçenek seçimi", "option selection"]:
+        # Kullanıcıya seçenekler sunulur
+        option_names = [category["name"] for category in selected_menu_data[selection_type]]
+        selected_option = st.radio("Lütfen bir seçenek seçin:", option_names)
 
-        # Seçenek seçimi durumunda, tüm öğeler otomatik olarak seçilir
-        if category["type"] == "option":
-            st.write("Bu bir seçenek seçimidir. Altındaki tüm içerikler otomatik olarak seçildi:")
-            selections[category["name"]] = items
-            for item in items:
-                st.write(f"- {item}")
+        # Seçilen seçeneğin altındaki tüm öğeler otomatik olarak alınır
+        for category in selected_menu_data[selection_type]:
+            if category["name"] == selected_option:
+                st.write(f"**Seçilen Seçenek: {category['name']}**")
+                selections[category["name"]] = category["items"]
+                st.write("### İçerikler:")
+                for item in category["items"]:
+                    st.write(f"- {item}")
 
-        # Besin seçimi durumunda, kullanıcıya seçim yapma imkanı tanınır
-        elif category["type"] == "single":
-            selected_item = st.radio(f"{category['name']} seçiniz:", items)
-            selections[category["name"]] = selected_item
-        elif category["type"] == "multiple":
-            selected_items = []
-            for item in items:
-                if st.checkbox(item):
-                    selected_items.append(item)
-            selections[category["name"]] = selected_items
-        elif category["type"] == "optional":
-            optional_items = []
-            for item in items:
-                if st.checkbox(item):
-                    optional_items.append(item)
-            selections[category["name"]] = optional_items
+    elif selection_type in ["besin seçimi", "food selection"]:
+        # Kullanıcıya besin seçimi için detaylar gösterilir
+        for category in selected_menu_data[selection_type]:
+            st.subheader(category["name"])
+            items = category["items"]
+
+            if category["type"] == "single":
+                selected_item = st.radio(f"{category['name']} seçiniz:", items)
+                selections[category["name"]] = selected_item
+            elif category["type"] == "multiple":
+                selected_items = []
+                for item in items:
+                    if st.checkbox(item):
+                        selected_items.append(item)
+                selections[category["name"]] = selected_items
+            elif category["type"] == "optional":
+                optional_items = []
+                for item in items:
+                    if st.checkbox(item):
+                        optional_items.append(item)
+                selections[category["name"]] = optional_items
 
     # Kullanıcı Seçimlerini Göster
     st.write("### Seçimleriniz:")
