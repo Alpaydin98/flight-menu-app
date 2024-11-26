@@ -390,7 +390,7 @@ def create_menu_ui(menu_data):
         Lütfen seçimlere dayanarak ve kullanıcının sorusunu dikkate alarak uygun bir cevap verin.
         """
         # OpenAI API çağrısı
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.createe(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are an assistant that provides information based on menu selections."},
@@ -399,7 +399,7 @@ def create_menu_ui(menu_data):
             max_tokens=150,
             temperature=0.5,
         )
-        chatbot_response = response['choices'][0]['message']['content']
+        chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
 
 
