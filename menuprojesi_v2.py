@@ -29,30 +29,22 @@ st.set_page_config(page_title="Dinamik Menü Analiz ve Seçim", page_icon="✈�
 client = anthropic.Client(api_key=anthropic_api_key)
 
 
-
-# OCR İşlevi
-def azure_ocr(image_path):
-    try:
-        with open(image_path, "rb") as image_stream:
-            read_response = cv_client.read_in_stream(image_stream, raw=True)
-        operation_location = read_response.headers["Operation-Location"]
+def azure_ocr_from_pdf(pdf_path):
+    with open(pdf_path, "rb") as pdf_file:
+        ocr_result = cv_client.read_in_stream(pdf_file, raw=True)
+        operation_location = ocr_result.headers["Operation-Location"]
         operation_id = operation_location.split("/")[-1]
-
         while True:
             result = cv_client.get_read_result(operation_id)
             if result.status not in [OperationStatusCodes.not_started, OperationStatusCodes.running]:
                 break
             time.sleep(1)
-
         extracted_text = ""
         if result.status == OperationStatusCodes.succeeded:
             for page in result.analyze_result.read_results:
                 for line in page.lines:
                     extracted_text += line.text + "\n"
         return extracted_text
-    except Exception as e:
-        st.error(f"OCR işlemi sırasında bir hata oluştu: {e}")
-        return ""
 
 # Prompt Oluşturma (Pattern Kuralları Dahil)
 def create_pattern_prompt(menu_text):
