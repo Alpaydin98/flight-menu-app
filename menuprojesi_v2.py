@@ -345,23 +345,42 @@ def create_menu_ui(menu_data):
 
     # Seçimler için veri işleme
     selections = {}
-    st.subheader("Lütfen bir seçenek seçin:")
-    options = [category["name"] for category in selected_menu_data[selection_type]]
-    selected_option = st.radio("Seçenekler:", options)
-
-    # Seçilen seçenek altındaki öğeleri otomatik seç
+    st.subheader("Seçimler:")
     for category in selected_menu_data[selection_type]:
-        if category["name"] == selected_option:
-            st.write(f"**Seçilen Seçenek: {category['name']}**")
-            selections[category["name"]] = category["items"]
-            st.write("### İçerikler:")
-            for item in category["items"]:
+        st.subheader(category["name"])
+        items = category["items"]
+
+        # Seçenek seçimi durumunda, tüm öğeler otomatik olarak seçilir
+        if category["type"] == "option":
+            st.write("Bu bir seçenek seçimidir. Altındaki tüm içerikler otomatik olarak seçildi:")
+            selections[category["name"]] = items
+            for item in items:
                 st.write(f"- {item}")
+
+        # Besin seçimi durumunda, kullanıcıya seçim yapma imkanı tanınır
+        elif category["type"] == "single":
+            selected_item = st.radio(f"{category['name']} seçiniz:", items)
+            selections[category["name"]] = selected_item
+        elif category["type"] == "multiple":
+            selected_items = []
+            for item in items:
+                if st.checkbox(item):
+                    selected_items.append(item)
+            selections[category["name"]] = selected_items
+        elif category["type"] == "optional":
+            optional_items = []
+            for item in items:
+                if st.checkbox(item):
+                    optional_items.append(item)
+            selections[category["name"]] = optional_items
 
     # Kullanıcı Seçimlerini Göster
     st.write("### Seçimleriniz:")
     for category, items in selections.items():
-        st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
+        if isinstance(items, list):
+            st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
+        else:
+            st.write(f"**{category}:** {items if items else 'Seçilmedi'}")
 
     # Chatbot Entegrasyonu
     st.subheader("Chatbot'a Sorular Sorun")
@@ -390,6 +409,7 @@ def create_menu_ui(menu_data):
         )
         chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
+
 
 
 #Kamera veya Dosya Yükleme İşlemleri
