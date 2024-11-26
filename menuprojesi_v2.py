@@ -315,6 +315,7 @@ def analyze_menu_with_openai(text):
 import streamlit as st
 import json
 
+# Dinamik Menü UI Fonksiyonu
 def create_menu_ui(menu_data):
     st.title("Dinamik Menü ve Chatbot")
 
@@ -345,18 +346,33 @@ def create_menu_ui(menu_data):
 
     # Seçimler için veri işleme
     selections = {}
-    st.subheader("Lütfen bir seçenek seçin:")
-    options = list(selected_menu_data[selection_type].keys())  # Seçenek 1, Seçenek 2 gibi
-    selected_option = st.radio("Seçenekler:", options)
-    
-    selected_option_items = selected_menu_data[selection_type][selected_option]
-    # Otomatik olarak tüm öğeleri seç
-    selections[selected_option] = selected_option_items
+    for category in selected_menu_data[selection_type]:
+        st.subheader(category["name"])
+        items = category["items"]
+
+        if category["type"] == "single":
+            selected_item = st.radio(f"{category['name']} seçiniz:", items)
+            selections[category["name"]] = selected_item
+        elif category["type"] == "multiple":
+            selected_items = []
+            for item in items:
+                if st.checkbox(item):
+                    selected_items.append(item)
+            selections[category["name"]] = selected_items
+        elif category["type"] == "optional":
+            optional_items = []
+            for item in items:
+                if st.checkbox(item):
+                    optional_items.append(item)
+            selections[category["name"]] = optional_items
 
     # Kullanıcı Seçimlerini Göster
     st.write("### Seçimleriniz:")
     for category, items in selections.items():
-        st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
+        if isinstance(items, list):
+            st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
+        else:
+            st.write(f"**{category}:** {items if items else 'Seçilmedi'}")
 
     # Chatbot Entegrasyonu
     st.subheader("Chatbot'a Sorular Sorun")
@@ -385,9 +401,6 @@ def create_menu_ui(menu_data):
         )
         chatbot_response = response.choices[0].message.content
         st.write(f"**Chatbot Cevabı:** {chatbot_response}")
-
-
-
 
 #Kamera veya Dosya Yükleme İşlemleri
 st.header("Fotoğraf Yükleme veya Çekim")
