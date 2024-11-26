@@ -412,6 +412,7 @@ def create_menu_ui(menu_data):
 
 
 
+
 #Kamera veya Dosya Yükleme İşlemleri
 st.header("Fotoğraf Yükleme veya Çekim")
 
