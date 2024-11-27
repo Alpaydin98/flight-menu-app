@@ -306,7 +306,7 @@ def analyze_menu_with_openai(text):
 }}
        
         """
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4o",
             messages=[
             {"role": "system", "content": "You are an assistant that extracts and formats JSON data."},
@@ -315,7 +315,7 @@ def analyze_menu_with_openai(text):
             max_tokens=2000,
             temperature=0.2,
         )
-        categorized_text = response['choices'][0]['message']['content']
+        categorized_text = response.choices[0].message.content
         cleaned_text = re.sub(r'^```json\n|```$', '', categorized_text.strip(), flags=re.MULTILINE)
         st.write(categorized_text)
         menu_dict = json.loads(cleaned_text)
@@ -495,7 +495,7 @@ def create_menu_ui(menu_data: Dict):
         """
         # OpenAI API çağrısı
         try:
-            response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": "You are an assistant that provides information based on menu selections."},
@@ -504,7 +504,7 @@ def create_menu_ui(menu_data: Dict):
                 max_tokens=150,
                 temperature=0.5,
             )
-            chatbot_response = response['choices'][0]['message']['content']
+            chatbot_response = response.choices[0].message.content
             st.write(f"**Chatbot Cevabı:** {chatbot_response}")
         except Exception as e:
             st.error(f"Chatbot cevabı alınamadı: {e}")
