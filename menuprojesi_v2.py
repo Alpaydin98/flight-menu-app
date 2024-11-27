@@ -204,6 +204,10 @@ import json
 def analyze_menu_with_openai(text):
    
     try:
+        
+        if 'menu_data' in st.session_state and not st.session_state.get('new_file_uploaded', False):
+            return st.session_state.menu_data
+        
         prompt = create_pattern_prompt(text)
         response = client.messages.create(
             model="claude-3-5-sonnet-20241022",
@@ -258,7 +262,17 @@ def analyze_menu_with_openai(text):
                     ],
                     "rules": "Bu menüden tüm ürünler birlikte seçilmelidir"
                 }}
-            ]
+            ],
+            "Besin Seçimi": [
+                {{
+                    "name": "Başlangıçlar",
+                    "type": "multiple",
+                    "items": [
+                        "NİSUAZ SALATA",
+                        "MOZZARELLA VE IZGARA SEBZELER"
+                    ],
+                    "rules": "Her iki başlangıç da seçilebilir"
+                }}
         }}
     }},
     "English": {{
@@ -292,7 +306,7 @@ def analyze_menu_with_openai(text):
 }}
        
         """
-        response = openai.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
             {"role": "system", "content": "You are an assistant that extracts and formats JSON data."},
@@ -301,147 +315,246 @@ def analyze_menu_with_openai(text):
             max_tokens=2000,
             temperature=0.2,
         )
-        categorized_text = response.choices[0].message.content
+        categorized_text = response['choices'][0]['message']['content']
         cleaned_text = re.sub(r'^```json\n|```$', '', categorized_text.strip(), flags=re.MULTILINE)
         st.write(categorized_text)
         menu_dict = json.loads(cleaned_text)
-        create_menu_ui(menu_dict)
-       
-           
+        st.session_state.new_file_uploaded = False  # Yeni dosya işlenmiş kabul edilir
+        st.session_state.menu_data = menu_dict  # Menü verisini kaydet
+        return menu_dict
     except Exception as e:
-        st.error(f"Menu analysis error: {e}")
-        st.write("Response object:", response)
-        return None
+        st.error(f"Menü analizi sırasında bir hata oluştu: {e}")
+        return {}
+        
+       
 
 import streamlit as st
 import json
 
-def create_menu_ui(menu_data):
+import streamlit as st
+from typing import Dict, List, Union
+
+def render_option_based_menu(menu_data: Dict, key: str) -> Dict:
+    """
+    Seçenek bazlı menüyü render eder
+    """
+    selections = {}
+    options = menu_data[key]
+    option_names = [option["name"] for option in options]
+
+    st.subheader("Menü Seçimi")
+    selected_option = st.radio("Lütfen bir seçenek seçin:", option_names)
+
+    if selected_option:
+        selected_items = next(option["items"] for option in options if option["name"] == selected_option)
+        st.write("### Seçilen Menü İçeriği:")
+        for item in selected_items:
+            st.write(f"- {item}")
+        selections[selected_option] = selected_items
+
+    return selections
+
+def render_food_category(category: Dict, category_name: str) -> Union[List, str, Dict]:
+    """
+    Tekil bir yemek kategorisini render eder
+    """
+    st.subheader(category_name)
+    st.caption(f"*{category['rules']}*")
+    
+    if category["type"] == "single":
+        return render_single_selection(category, category_name)
+    elif category["type"] in ["multiple", "optional"]:
+        return render_multiple_selection(category, category_name)
+    
+    return None
+
+def render_single_selection(category: Dict, category_name: str) -> Union[str, Dict]:
+    """
+    Tekli seçim tipindeki kategorileri render eder
+    """
+    # Eğer items içinde dict varsa ve birden fazla seçenek varsa
+    if isinstance(category["items"][0], dict):
+        options_dict = {}
+        for item_dict in category["items"]:
+            options_dict.update(item_dict)
+        
+        selected_option = st.radio(
+            "Lütfen bir seçenek seçin:",
+            list(options_dict.keys()),
+            key=f"{category_name}_option"
+        )
+        
+        st.write(f"**{selected_option} içeriği:**")
+        for item in options_dict[selected_option]:
+            st.write(f"- {item}")
+        return {selected_option: options_dict[selected_option]}
+    
+    return st.radio(
+        f"Lütfen bir {category_name.lower()} seçin:", 
+        category["items"],
+        key=f"{category_name}_single"
+    )
+    
+
+def render_multiple_selection(category: Dict, category_name: str) -> List:
+    """
+    Çoklu seçim tipindeki kategorileri render eder
+    """
+    selected_items = []
+    for item in category["items"]:
+        if st.checkbox(item, key=f"{category_name}_{item}"):
+            selected_items.append(item)
+    return selected_items
+
+def display_selections(selections: Dict):
+    """
+    Kullanıcı seçimlerini görüntüler
+    """
+    st.write("### Seçimleriniz:")
+    for category, items in selections.items():
+        if isinstance(items, dict):
+            for option, selected_items in items.items():
+                st.write(f"**{category} - {option}:** {', '.join(selected_items)}")
+        elif isinstance(items, list):
+            st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
+        else:
+            st.write(f"**{category}:** {items if items else 'Seçilmedi'}")
+
+def create_menu_ui(menu_data: Dict):
+    """
+    Ana menü UI bileşenini oluşturur
+    """
+    # Oturum durumunu kullanarak menü verilerini bir kez sakla
+    if 'menu_data' not in st.session_state:
+        st.session_state.menu_data = menu_data
+
     st.title("Dinamik Menü ve Chatbot")
+    
     # Dil Seçimi
-    language_options = list(menu_data.keys())
+    language_options = list(st.session_state.menu_data.keys())
     selected_language = st.selectbox("Lütfen bir dil seçin:", language_options)
-    selected_language_data = menu_data[selected_language]
+    selected_language_data = st.session_state.menu_data[selected_language]
     
     # Menü Seçimi
     menu_options = list(selected_language_data.keys())
     selected_menu = st.selectbox("Lütfen bir menü seçin:", menu_options)
     selected_menu_data = selected_language_data[selected_menu]
     
-    # Seçim Türünü Dinamik Olarak Belirle (Büyük/Küçük Harf Duyarlılığını Kaldır)
-    possible_keys = ["besin seçimi", "seçenek seçimi", "food selection", "option selection"]
-    selection_type = None
-    for key in possible_keys:
-        for actual_key in selected_menu_data.keys():
-            if actual_key.lower() == key:
-                selection_type = actual_key
+    # Menü tipini belirle
+    menu_type_map = {
+        "option": ("Seçenek Seçimi", "Option Selection"),
+        "food": ("Besin seçimi", "Food Selection")
+    }
+    
+    menu_type = None
+    selected_key = None
+    
+    for m_type, keys in menu_type_map.items():
+        for key in keys:
+            if key in selected_menu_data:
+                menu_type = m_type
+                selected_key = key
                 break
-        if selection_type:
+        if menu_type:
             break
-            
-    if not selection_type:
-        st.error("Uygun bir seçim türü bulunamadı!")
+    
+    if not menu_type:
+        st.error("Uygun bir menü türü bulunamadı!")
         return
-        
-    # Seçimler için veri işleme
+    
     selections = {}
-    is_option_selection = selection_type.lower() in ["seçenek seçimi", "option selection"]
     
-    for category in selected_menu_data[selection_type]:
-        st.subheader(category["name"])
-        items = category["items"]
-        
-        if is_option_selection:
-            # Seçenek seçimi ise, sadece kategoriyi seç ve tüm itemları otomatik ekle
-            if st.checkbox(f"{category['name']}'i seç"):
-                selections[category["name"]] = items
-            else:
-                selections[category["name"]] = []
-        else:
-            # Besin seçimi ise, her bir item için seçim yap
-            if category["type"] == "single":
-                selected_item = st.radio(f"{category['name']} seçiniz:", items)
-                selections[category["name"]] = selected_item
-            elif category["type"] == "multiple":
-                selected_items = []
-                for item in items:
-                    if st.checkbox(item):
-                        selected_items.append(item)
-                selections[category["name"]] = selected_items
-            elif category["type"] == "optional":
-                optional_items = []
-                for item in items:
-                    if st.checkbox(item):
-                        optional_items.append(item)
-                selections[category["name"]] = optional_items
+    # Menü tipine göre render
+    if menu_type == "option":
+        selections = render_option_based_menu(selected_menu_data, selected_key)
+    else:  # food type
+        categories = selected_menu_data[selected_key]
+        for category in categories:
+            result = render_food_category(category, category["name"])
+            if result:  # Boş olmayan sonuçları ekle
+                selections[category["name"]] = result
     
-    # Kullanıcı Seçimlerini Göster
-    st.write("### Seçimleriniz:")
-    for category, items in selections.items():
-        if isinstance(items, list):
-            st.write(f"**{category}:** {', '.join(items) if items else 'Seçilmedi'}")
-        else:
-            st.write(f"**{category}:** {items if items else 'Seçilmedi'}")
-
+    # Seçimleri görüntüle
+    if selections:
+        display_selections(selections)
+    
     # Chatbot Entegrasyonu
     st.subheader("Chatbot'a Sorular Sorun")
     user_message = st.text_input("Sorunuzu yazın:")
-   
+    
     if user_message:
         # Prompt oluşturma
         prompt = f"""
         Kullanıcı seçimleri:
         {selections}
-   
+        
         Kullanıcının sorusu:
         {user_message}
-   
+        
         Lütfen seçimlere dayanarak ve kullanıcının sorusunu dikkate alarak uygun bir cevap verin.
         """
         # OpenAI API çağrısı
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an assistant that provides information based on menu selections."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150,
-            temperature=0.5,
-        )
-        chatbot_response = response.choices[0].message.content
-        st.write(f"**Chatbot Cevabı:** {chatbot_response}")
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are an assistant that provides information based on menu selections."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150,
+                temperature=0.5,
+            )
+            chatbot_response = response['choices'][0]['message']['content']
+            st.write(f"**Chatbot Cevabı:** {chatbot_response}")
+        except Exception as e:
+            st.error(f"Chatbot cevabı alınamadı: {e}")
 
 
 
+# Streamlit session_state kullanımı: Dosya yükleme durumu
+if "menu_data" not in st.session_state:
+    st.session_state.menu_data = None
+if "new_file_uploaded" not in st.session_state:
+    st.session_state.new_file_uploaded = False
+if "capture_photo" not in st.session_state:
+    st.session_state.capture_photo = False  # Kamera ekranını tetiklemek için flag
 
-
-
-#Kamera veya Dosya Yükleme İşlemleri
+# Fotoğraf Yükleme ve Çekim Butonları
 st.header("Fotoğraf Yükleme veya Çekim")
 
 # 1. Dosya Yükleme
 uploaded_file = st.file_uploader("PDF veya Görüntü Dosyanızı Yükleyin", type=["pdf", "png", "jpg", "jpeg"])
 
-# 2. Kamera ile Fotoğraf Çekim
-st.subheader("Ya da Fotoğraf Çekmek için Butona Tıklayın")
-camera_photo = st.camera_input("Fotoğraf Çek")
+# 2. Fotoğraf Çekim
+if st.button("Fotoğraf Çek"):
+    st.session_state.capture_photo = True
+
+# Eğer "Fotoğraf Çek" butonuna tıklanmışsa kamera girişini göster
+if st.session_state.capture_photo:
+    camera_photo = st.camera_input("Fotoğraf Çek")
+    if camera_photo:
+        st.session_state.new_file_uploaded = True
+        st.session_state.capture_photo = False  # Kamera ekranını kapatmak için
 
 # Görsellerin Toplanması
 images = []
 
 if uploaded_file:
+    if "last_uploaded_file_name" not in st.session_state or st.session_state.last_uploaded_file_name != uploaded_file.name:
+        st.session_state.new_file_uploaded = True
+        st.session_state.last_uploaded_file_name = uploaded_file.name
+
     if uploaded_file.type == "application/pdf":
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file.write(uploaded_file.read())
             temp_pdf_path = temp_file.name
-        st.info("PDF yüklendi. OCR işlemi için hazırlanıyor...")
-        images.append(temp_pdf_path)  # PDF OCR için path ekliyoruz
+        images.append(temp_pdf_path)
     elif uploaded_file.type in ["image/png", "image/jpeg"]:
         image = Image.open(uploaded_file)
         st.image(image, caption="Yüklenen Görüntü", use_column_width=True)
         images.append(image)
 
-if camera_photo:
+if "camera_photo" in locals() and camera_photo:
     try:
         image = Image.open(camera_photo)
         st.image(image, caption="Kameradan Çekilen Görüntü", use_column_width=True)
@@ -450,14 +563,14 @@ if camera_photo:
         st.error(f"Kameradan alınan görüntü işlenemedi: {e}")
 
 # OCR İşlemi
-if images:
+if images and st.session_state.new_file_uploaded:
     st.subheader("OCR İşlemi Başlatılıyor")
     extracted_text = ""
 
     for img in images:
-        if isinstance(img, str):  # PDF dosya yolu
+        if isinstance(img, str):
             extracted_text += azure_ocr(img) + "\n"
-        else:  # Görüntü (kamera veya yüklenen)
+        else:
             try:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image_file:
                     img.save(temp_image_file.name)
@@ -470,13 +583,28 @@ if images:
 
         # Menü Analizi
         st.subheader("Menü Analizi")
-        menu_analysis = analyze_menu_with_openai(extracted_text)
-        if menu_analysis:
-            st.success("Menü başarıyla analiz edildi!")
-            create_menu_ui(menu_analysis)
-        else:
-            st.error("Menü analizi başarısız oldu.")
+        retry_count = 0
+        max_retries = 3
+        menu_analysis = None
+        while retry_count < max_retries:
+            try:
+                menu_analysis = analyze_menu_with_openai(extracted_text)
+                if menu_analysis:
+                    st.success("Menü başarıyla analiz edildi!")
+                    st.session_state.menu_data = menu_analysis
+                    st.session_state.new_file_uploaded = False
+                    break
+            except Exception as e:
+                retry_count += 1
+                st.warning(f"Menü analizi sırasında hata oluştu. Tekrar deneniyor ({retry_count}/{max_retries})...")
+        if not menu_analysis:
+            st.error("Menü analizi başarısız oldu. Lütfen dosyanızı kontrol edin.")
     else:
-        st.error("OCR işlemi başarısız. Lütfen görüntünüzü veya dosyanızı kontrol edin.")
+        st.error("OCR işlemi başarısız. Lütfen dosyanızı kontrol edin.")
+
+# Menü UI
+if st.session_state.menu_data:
+    create_menu_ui(st.session_state.menu_data)
 else:
     st.info("Lütfen bir dosya yükleyin veya kamerayla fotoğraf çekin.")
+
